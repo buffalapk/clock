@@ -3,141 +3,72 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リンクリスト（list.xml 読み込み）</title>
+  <title>リンクリスト — Material Web</title>
+
+  <!-- Material Web -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@material/web/": "https://esm.run/@material/web/"
+    }
+  }
+  </script>
+  <script type="module">
+    import '@material/web/all.js';
+  </script>
+
   <style>
-    :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --muted:#6b7280;
-      --accent:#0b5fff;
-      --radius:12px;
-      font-family: system-ui, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+    :root{ --maxw:980px; font-family: system-ui, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Roboto, sans-serif; }
+    body{ background:#f5f7fb; margin:0; padding:28px; color:#111827; }
+    .wrap{ max-width:var(--maxw); margin:0 auto; }
+    header{ display:flex; gap:12px; align-items:center; }
+    h1{ margin:0; font-size:1.25rem; }
+    .controls{ margin-left:auto; display:flex; gap:10px; align-items:center; }
+    .list{ margin-top:18px; display:grid; gap:12px; }
+    md-card{ display:flex; justify-content:space-between; align-items:flex-start; padding:12px; }
+    .meta{ flex:1; padding-right:12px; }
+    .title-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .desc{ color:#555; margin:8px 0; }
+    .tags{ display:flex; flex-wrap:wrap; gap:8px; }
+    md-chip{ cursor:pointer; }
+    .right{ min-width:120px; display:flex; align-items:center; }
+    .status{ margin-top:12px; color:#6b7280; }
+    .empty{ padding:18px; background:white; border-radius:12px; text-align:center; }
+    @media (max-width:640px){ header{flex-direction:column; align-items:flex-start} .controls{ margin-left:0; }
+      .right{ min-width:100px; }
     }
-    body{
-      background:var(--bg);
-      margin:0;
-      padding:28px;
-      color:#111827;
-    }
-    .container{
-      max-width:980px;
-      margin:0 auto;
-    }
-    header{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      margin-bottom:18px;
-    }
-    h1{margin:0;font-size:1.25rem}
-    .controls{
-      margin-top:12px;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-    input[type="search"], select{
-      padding:8px 10px;
-      border-radius:8px;
-      border:1px solid #e5e7eb;
-      background:white;
-      min-width:160px;
-    }
-    .list{
-      margin-top:18px;
-      display:grid;
-      gap:12px;
-    }
-    .card{
-      background:var(--card);
-      border-radius:var(--radius);
-      padding:12px;
-      box-shadow:0 6px 18px rgba(15,23,42,0.06);
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-    }
-    .meta{
-      flex:1;
-    }
-    .title{
-      font-weight:600;
-      font-size:1rem;
-      margin:0 0 6px 0;
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:center;
-    }
-    .title a{color:var(--accent); text-decoration:none;}
-    .desc{color:var(--muted); margin:0 0 8px 0;}
-    .tags{font-size:0.85rem; color:#374151;}
-    .tag{
-      display:inline-block;
-      background:#f1f5f9;
-      padding:4px 8px;
-      border-radius:999px;
-      margin-right:6px;
-      margin-top:6px;
-      font-size:0.8rem;
-    }
-    .right{
-      text-align:right;
-      min-width:120px;
-    }
-    .btn{
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:8px;
-      border:0;
-      background:var(--accent);
-      color:white;
-      text-decoration:none;
-      font-size:0.9rem;
-    }
-    .hint{color:var(--muted); font-size:0.9rem; margin-top:8px;}
-    .error{color:#dc2626;}
-    .empty{color:var(--muted); padding:18px; text-align:center; background:white; border-radius:12px;}
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="wrap">
     <header>
-      <h1>リンクリスト</h1>
-      <div class="controls" style="margin-left:auto">
-        <input id="search" type="search" placeholder="検索（タイトル・説明・タグ）" aria-label="検索">
-        <select id="tagFilter">
-          <option value="">タグで絞り込み（すべて）</option>
-        </select>
-        <select id="sort">
-          <option value="title_asc">タイトル昇順</option>
-          <option value="title_desc">タイトル降順</option>
-          <option value="tagcount_desc">タグ数降順</option>
-        </select>
-        <button id="reload" class="btn" style="background:#10b981">再読み込み</button>
+      <h1>リンクリスト — Material Web</h1>
+
+      <div class="controls">
+        <md-outlined-text-field id="search" placeholder="検索（タイトル・説明・タグ）"></md-outlined-text-field>
+
+        <md-select id="tagFilter" value="">
+          <md-select-item value="">タグで絞り込み（すべて）</md-select-item>
+        </md-select>
+
+        <md-select id="sort">
+          <md-select-item value="title_asc">タイトル昇順</md-select-item>
+          <md-select-item value="title_desc">タイトル降順</md-select-item>
+          <md-select-item value="tagcount_desc">タグ数降順</md-select-item>
+        </md-select>
+
+        <md-filled-button id="reload">list.xml を読み込む</md-filled-button>
       </div>
     </header>
 
-    <div id="status" class="hint">list.xml を読み込み中...</div>
+    <div id="status" class="status">初期状態：list.xml はまだ読み込んでいません。</div>
+
     <div id="list" class="list" aria-live="polite"></div>
   </div>
 
   <script>
-  // --- 設定 ---
-  const XML_PATH = 'list.xml'; // 同ディレクトリの list.xml を読み込む
+  const XML_PATH = 'list.xml';
 
-  // --- ユーティリティ ---
-  function textOf(node, tagName){
-    const el = node.querySelector(tagName);
-    return el ? (el.textContent || '').trim() : '';
-  }
-
-  function unique(array){
-    return [...new Set(array)];
-  }
-
-  // --- DOM ---
   const statusEl = document.getElementById('status');
   const listEl = document.getElementById('list');
   const searchInput = document.getElementById('search');
@@ -147,58 +78,62 @@
 
   let LINKS = [];
 
-  // XML を fetch → parse → LINKS に詰める
+  function textOf(node, tagName){
+    const el = node.querySelector(tagName);
+    return el ? (el.textContent || '').trim() : '';
+  }
+
+  function unique(array){ return [...new Set(array)]; }
+
   async function loadXml(){
     setStatus('読み込み中...');
-    try {
-      const resp = await fetch(XML_PATH, {cache: 'no-store'});
+    try{
+      const resp = await fetch(XML_PATH, {cache:'no-store'});
       if(!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
       const txt = await resp.text();
       const parser = new DOMParser();
-      const xml = parser.parseFromString(txt, "application/xml");
-
-      // XML エラー検出
+      const xml = parser.parseFromString(txt, 'application/xml');
       const parsererror = xml.querySelector('parsererror');
-      if(parsererror){
-        throw new Error('XML 解析エラー: ' + parsererror.textContent);
-      }
+      if(parsererror) throw new Error('XML 解析エラー: ' + parsererror.textContent);
 
       const nodes = Array.from(xml.querySelectorAll('link'));
       LINKS = nodes.map(n => ({
-        title: textOf(n, 'title') || '(タイトルなし)',
-        url: textOf(n, 'url') || '#',
-        description: textOf(n, 'description'),
-        tags: (textOf(n, 'tags') || '').split(',').map(s => s.trim()).filter(Boolean)
+        title: textOf(n,'title') || '(タイトルなし)',
+        url: textOf(n,'url') || '#',
+        description: textOf(n,'description'),
+        tags: (textOf(n,'tags') || '').split(',').map(s=>s.trim()).filter(Boolean)
       }));
 
       setStatus(`読み込み完了：${LINKS.length} 件`);
       buildTagFilter();
       render();
-    } catch (err) {
+    }catch(err){
       console.error(err);
-      setStatus(`エラー: ${err.message}`, true);
-      listEl.innerHTML = `<div class="empty error">list.xml の読み込みに失敗しました。ブラウザのコンソールを確認してください。</div>`;
+      setStatus('エラー: ' + err.message);
+      listEl.innerHTML = `<div class="empty">list.xml の読み込みに失敗しました。コンソールを確認してください。</div>`;
     }
   }
 
-  function setStatus(text, isError = false){
-    statusEl.textContent = text;
-    statusEl.className = isError ? 'hint error' : 'hint';
-  }
+  function setStatus(text){ statusEl.textContent = text; }
 
   function buildTagFilter(){
-    const allTags = LINKS.flatMap(l => l.tags);
+    const allTags = LINKS.flatMap(l=>l.tags);
     const uniq = unique(allTags).sort((a,b)=>a.localeCompare(b));
-    tagFilter.innerHTML = '<option value="">タグで絞り込み（すべて）</option>';
+
+    while(tagFilter.firstChild) tagFilter.removeChild(tagFilter.firstChild);
+    const defaultItem = document.createElement('md-select-item');
+    defaultItem.setAttribute('value','');
+    defaultItem.textContent = 'タグで絞り込み（すべて）';
+    tagFilter.appendChild(defaultItem);
+
     uniq.forEach(tag => {
-      const opt = document.createElement('option');
-      opt.value = tag;
-      opt.textContent = tag;
-      tagFilter.appendChild(opt);
+      const it = document.createElement('md-select-item');
+      it.setAttribute('value', tag);
+      it.textContent = tag;
+      tagFilter.appendChild(it);
     });
   }
 
-  // フィルタ・ソート・検索を適用して描画
   function render(){
     const q = (searchInput.value || '').toLowerCase().trim();
     const tag = tagFilter.value;
@@ -211,65 +146,37 @@
       return true;
     });
 
-    // sort
-    if(sortMode === 'title_asc'){
-      arr.sort((a,b)=> a.title.localeCompare(b.title));
-    } else if(sortMode === 'title_desc'){
-      arr.sort((a,b)=> b.title.localeCompare(a.title));
-    } else if(sortMode === 'tagcount_desc'){
-      arr.sort((a,b)=> b.tags.length - a.tags.length);
-    }
+    if(sortMode === 'title_asc') arr.sort((a,b)=> a.title.localeCompare(b.title));
+    else if(sortMode === 'title_desc') arr.sort((a,b)=> b.title.localeCompare(a.title));
+    else if(sortMode === 'tagcount_desc') arr.sort((a,b)=> b.tags.length - a.tags.length);
 
-    if(arr.length === 0){
-      listEl.innerHTML = `<div class="empty">該当するリンクがありません。</div>`;
-      return;
-    }
+    if(arr.length === 0){ listEl.innerHTML = `<div class="empty">該当するリンクがありません。</div>`; return; }
 
     listEl.innerHTML = '';
     arr.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'card';
+      const card = document.createElement('md-card');
+      const meta = document.createElement('div'); meta.className = 'meta';
 
-      const meta = document.createElement('div');
-      meta.className = 'meta';
+      const titleRow = document.createElement('div'); titleRow.className = 'title-row';
+      const a = document.createElement('a'); a.href = item.url; a.textContent = item.title; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      const right = document.createElement('div'); right.className = 'right';
 
-      const titleRow = document.createElement('div');
-      titleRow.className = 'title';
-
-      const a = document.createElement('a');
-      a.href = item.url;
-      a.textContent = item.title;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-
-      const right = document.createElement('div');
-      right.className = 'right';
-
-      const openBtn = document.createElement('a');
-      openBtn.className = 'btn';
-      openBtn.textContent = '開く';
-      openBtn.href = item.url;
-      openBtn.target = '_blank';
-      openBtn.rel = 'noopener noreferrer';
+      const openBtn = document.createElement('md-filled-button');
+      openBtn.innerHTML = '開く';
+      openBtn.addEventListener('click', ()=> window.open(item.url, '_blank'));
 
       titleRow.appendChild(a);
       right.appendChild(openBtn);
 
-      const desc = document.createElement('p');
-      desc.className = 'desc';
-      desc.textContent = item.description || '';
+      const desc = document.createElement('div'); desc.className = 'desc'; desc.textContent = item.description || '';
+      const tagsDiv = document.createElement('div'); tagsDiv.className = 'tags';
 
-      const tagsDiv = document.createElement('div');
-      tagsDiv.className = 'tags';
       (item.tags || []).forEach(t => {
-        const span = document.createElement('span');
-        span.className = 'tag';
-        span.textContent = t;
-        span.addEventListener('click', () => {
-          tagFilter.value = t;
-          render();
-        });
-        tagsDiv.appendChild(span);
+        const chip = document.createElement('md-chip');
+        chip.setAttribute('removable','false');
+        chip.textContent = t;
+        chip.addEventListener('click', ()=>{ tagFilter.value = t; render(); });
+        tagsDiv.appendChild(chip);
       });
 
       meta.appendChild(titleRow);
@@ -282,31 +189,12 @@
     });
   }
 
-  // --- イベント ---
   searchInput.addEventListener('input', debounce(render, 200));
   tagFilter.addEventListener('change', render);
   sortSelect.addEventListener('change', render);
   reloadBtn.addEventListener('click', loadXml);
 
-  // --- 小ユーティリティ: デバウンス ---
-  function debounce(fn, wait){
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(()=>fn(...args), wait);
-    };
-  }
-
-  // 初回読み込み
-  loadXml();
-
-  // フォールバック：キーボードから r を押すと再読み込み
-  window.addEventListener('keydown', (e) => {
-    if(e.key === 'r' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      loadXml();
-    }
-  });
+  function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
   </script>
 </body>
 </html>
