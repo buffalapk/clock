@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>夜景時計（Pixabay設定付き・スリープ無効）</title>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  body {
+    display: grid;
+    place-items: center;
+    font-family: "Noto Sans JP", sans-serif;
+    color: #fff;
+  }
+
+  /* 背景コンテナ */
+  .bg-container {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    z-index:-1;
+    overflow:hidden;
+  }
+  .bg-container img {
+    position:absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    opacity:0;
+    transition: opacity 2s ease-in-out;
+  }
+  .bg-container img.active {
+    opacity:1;
+  }
+
+  .clock-wrap {
+    text-align: center;
+    padding: 36px 48px;
+    border-radius: 18px;
+    background: rgba(0,0,0,0.45);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    min-width: 320px;
+  }
+  .time {
+    font-size: clamp(48px, 12vw, 120px);
+    line-height:1;
+    letter-spacing:6px;
+    font-weight:600;
+    margin:0;
+    display:block;
+    font-variant-numeric: tabular-nums;
+  }
+  .colon {
+    animation: blink 1s steps(1,start) infinite;
+  }
+  @keyframes blink {
+    0%,49%{opacity:1;}
+    50%,100%{opacity:0;}
+  }
+  .date {
+    margin-top:12px;
+    font-size: clamp(14px,2.5vw,22px);
+    opacity:0.9;
+    letter-spacing:2px;
+  }
+
+  /* 左下クレジット */
+  .credit {
+    position: fixed;
+    left: 10px;
+    bottom: 10px;
+    font-size: 12px;
+    opacity: 0.6;
+    color: #fff;
+    font-family: "Noto Sans JP", sans-serif;
+    pointer-events: none;
+  }
+
+  /* 設定ウィザードポップアップ */
+  .settings-overlay {
+    display: none;
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.65);
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+  .settings-dialog {
+    background: #222;
+    padding: 24px 32px;
+    border-radius: 12px;
+    color: #fff;
+    min-width: 300px;
+  }
+  .settings-dialog h2 {
+    margin-top: 0;
+  }
+  .settings-dialog label {
+    display: block;
+    margin: 12px 0 4px;
+  }
+  .settings-dialog input[type=number]{
+    width: 80px;
+  }
+  .settings-dialog button {
+    margin-top: 16px;
+    padding: 6px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #444;
+    color: #fff;
+    cursor: pointer;
+  }
+  .settings-dialog button:hover {
+    background: #666;
+  }
+</style>
+</head>
+<body>
+<div class="bg-container" id="bgContainer"></div>
+
+<div class="clock-wrap">
+  <span id="time" class="time">--<span class="colon">:</span>--</span>
+  <div id="date" class="date">ーーーー年ーー月ーー日(曜)</div>
+</div>
+
+<div class="credit">取得:Pixabay</div>
+
+<!-- 設定ポップアップ -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-dialog">
+    <h2>設定ウィザード</h2>
+    <label for="timeFontSize">時計フォントサイズ (px):</label>
+    <input type="number" id="timeFontSize" min="20" max="300">
+    <label for="dateFontSize">日付フォントサイズ (px):</label>
+    <input type="number" id="dateFontSize" min="10" max="80">
+    <button id="closeSettings">閉じる</button>
+  </div>
+</div>
+
+<script>
+(async function(){
+  // -------------------------
+  // 時計関連
+  const timeEl = document.getElementById('time');
+  const dateEl = document.getElementById('date');
+  const weekdays = ['日','月','火','水','木','金','土'];
+  function z2(n){return n<10?'0'+n:String(n);}
+  function formatDate(d){return `${d.getFullYear()}年${z2(d.getMonth()+1)}月${z2(d.getDate())}日(${weekdays[d.getDay()]})`;}
+  function formatTime(d){return `${z2(d.getHours())}<span class="colon">:</span>${z2(d.getMinutes())}`;}
+  let lastMin = null;
+  function updateClock(){
+    const now = new Date();
+    if(now.getMinutes()!==lastMin){
+      timeEl.innerHTML=formatTime(now);
+      lastMin=now.getMinutes();
+    }
+    dateEl.textContent=formatDate(now);
+  }
+  updateClock();
+  setInterval(updateClock,1000);
+
+  // -------------------------
+  // Pixabayで夜景画像を取得
+  const API_KEY='27973918-5f562b5fc40072d5c789d6630';
+  const query='night city';
+  const perPage=50;
+  const url=`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&orientation=horizontal&per_page=${perPage}`;
+
+  async function loadImages(){
+    try{
+      const res = await fetch(url);
+      const data = await res.json();
+      if(!data.hits || data.hits.length===0){
+        console.error('画像が取得できませんでした');
+        return [];
+      }
+      const shuffled = data.hits.sort(()=>0.5-Math.random());
+      const images = shuffled.slice(0,10).map(img=>img.fullHDURL || img.largeImageURL);
+      return images.map(src=>{
+        const img = new Image();
+        img.src = src;
+        return img;
+      });
+    }catch(e){
+      console.error('Pixabay取得エラー',e);
+      return [];
+    }
+  }
+
+  const bgContainer = document.getElementById('bgContainer');
+  const imgElements = await loadImages();
+  imgElements.forEach(img=>{
+    bgContainer.appendChild(img);
+  });
+
+  if(imgElements.length>0){
+    let index=0;
+    imgElements[index].classList.add('active');
+    setInterval(()=>{
+      imgElements[index].classList.remove('active');
+      index = (index+1)%imgElements.length;
+      imgElements[index].classList.add('active');
+    }, 30000); // 30秒ごとにフェード切替
+  }
+
+  // -------------------------
+  // 設定ウィザード関連
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const timeFontInput = document.getElementById('timeFontSize');
+  const dateFontInput = document.getElementById('dateFontSize');
+  const closeBtn = document.getElementById('closeSettings');
+
+  // ローカルストレージから設定を読み込む
+  const savedSettings = JSON.parse(localStorage.getItem('clockSettings') || '{}');
+  if(savedSettings.timeFont) timeEl.style.fontSize = savedSettings.timeFont+'px';
+  if(savedSettings.dateFont) dateEl.style.fontSize = savedSettings.dateFont+'px';
+  timeFontInput.value = savedSettings.timeFont || 80;
+  dateFontInput.value = savedSettings.dateFont || 22;
+
+  // Sキーでポップアップ表示
+  document.addEventListener('keydown', e=>{
+    if(e.key==='s' || e.key==='S'){
+      settingsOverlay.style.display='flex';
+    }
+  });
+
+  // 閉じるボタン
+  closeBtn.addEventListener('click', ()=>{
+    const timeFont = parseInt(timeFontInput.value);
+    const dateFont = parseInt(dateFontInput.value);
+    if(!isNaN(timeFont)) timeEl.style.fontSize = timeFont+'px';
+    if(!isNaN(dateFont)) dateEl.style.fontSize = dateFont+'px';
+    localStorage.setItem('clockSettings', JSON.stringify({
+      timeFont: timeFont,
+      dateFont: dateFont
+    }));
+    settingsOverlay.style.display='none';
+  });
+
+  // -------------------------
+  // スリープ無効（Wake Lock API）
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if('wakeLock' in navigator){
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release',()=>console.log('Wake Lock released'));
+        console.log('Wake Lock acquired');
+      } else {
+        console.log('Wake Lock API is not supported in this browser.');
+      }
+    } catch (err){
+      console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+    }
+  }
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible'){
+      requestWakeLock();
+    }
+  });
+
+  requestWakeLock();
+})();
+</script>
+</body>
+</html>
