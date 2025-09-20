@@ -132,7 +132,7 @@
     uniq.forEach(tag => {
       const it = document.createElement('md-select-option');
       it.setAttribute('value', tag);
-      it.textContent = `<${tag}>`;
+      it.textContent = `${tag}`;
       tagFilter.appendChild(it);
     });
   }
