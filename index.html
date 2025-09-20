@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>リンクリスト — Material Web</title>
+  <title>リンクリスト — Material Web (list.xml固定)</title>
 
-  <!-- Material Web -->
+  <!-- Material Web (esm.run CDN) -->
   <script type="importmap">
   {
     "imports": {
@@ -34,6 +34,7 @@
     .right{ min-width:120px; display:flex; align-items:center; }
     .status{ margin-top:12px; color:#6b7280; }
     .empty{ padding:18px; background:white; border-radius:12px; text-align:center; }
+    md-filled-select, md-outlined-text-field{ min-width:160px; }
     @media (max-width:640px){ header{flex-direction:column; align-items:flex-start} .controls{ margin-left:0; }
       .right{ min-width:100px; }
     }
@@ -42,26 +43,26 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>リンクリスト — Material Web</h1>
-
       <div class="controls">
         <md-outlined-text-field id="search" placeholder="検索（タイトル・説明・タグ）"></md-outlined-text-field>
 
-        <md-select id="tagFilter" value="">
-          <md-select-item value="">タグで絞り込み（すべて）</md-select-item>
-        </md-select>
+        <!-- タグ絞り込み（ドロップダウン） -->
+        <md-filled-select id="tagFilter" label="タグで絞り込み">
+          <md-select-option value="" selected>すべて</md-select-option>
+        </md-filled-select>
 
-        <md-select id="sort">
-          <md-select-item value="title_asc">タイトル昇順</md-select-item>
-          <md-select-item value="title_desc">タイトル降順</md-select-item>
-          <md-select-item value="tagcount_desc">タグ数降順</md-select-item>
-        </md-select>
+        <!-- 並び替え -->
+        <md-filled-select id="sort" label="並び替え">
+          <md-select-option value="title_asc" selected>タイトル昇順</md-select-option>
+          <md-select-option value="title_desc">タイトル降順</md-select-option>
+          <md-select-option value="tagcount_desc">タグ数降順</md-select-option>
+        </md-filled-select>
 
-        <md-filled-button id="reload">list.xml を読み込む</md-filled-button>
+        <md-filled-button id="reload">再読み込み</md-filled-button>
       </div>
     </header>
 
-    <div id="status" class="status">初期状態：list.xml はまだ読み込んでいません。</div>
+    <div id="status" class="status">読み込み中...</div>
 
     <div id="list" class="list" aria-live="polite"></div>
   </div>
@@ -96,12 +97,14 @@
       const parsererror = xml.querySelector('parsererror');
       if(parsererror) throw new Error('XML 解析エラー: ' + parsererror.textContent);
 
-      const nodes = Array.from(xml.querySelectorAll('link'));
+      let nodes = Array.from(xml.querySelectorAll('link'));
+      if(nodes.length === 0) nodes = Array.from(xml.querySelectorAll('item'));
+
       LINKS = nodes.map(n => ({
         title: textOf(n,'title') || '(タイトルなし)',
-        url: textOf(n,'url') || '#',
+        url: textOf(n,'url') || textOf(n,'link') || '#',
         description: textOf(n,'description'),
-        tags: (textOf(n,'tags') || '').split(',').map(s=>s.trim()).filter(Boolean)
+        tags: (textOf(n,'tags') || textOf(n,'tag') || '').split(',').map(s=>s.trim()).filter(Boolean)
       }));
 
       setStatus(`読み込み完了：${LINKS.length} 件`);
@@ -121,15 +124,15 @@
     const uniq = unique(allTags).sort((a,b)=>a.localeCompare(b));
 
     while(tagFilter.firstChild) tagFilter.removeChild(tagFilter.firstChild);
-    const defaultItem = document.createElement('md-select-item');
+    const defaultItem = document.createElement('md-select-option');
     defaultItem.setAttribute('value','');
-    defaultItem.textContent = 'タグで絞り込み（すべて）';
+    defaultItem.textContent = 'すべて';
     tagFilter.appendChild(defaultItem);
 
     uniq.forEach(tag => {
-      const it = document.createElement('md-select-item');
+      const it = document.createElement('md-select-option');
       it.setAttribute('value', tag);
-      it.textContent = tag;
+      it.textContent = `<${tag}>`;
       tagFilter.appendChild(it);
     });
   }
@@ -195,6 +198,9 @@
   reloadBtn.addEventListener('click', loadXml);
 
   function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
+
+  // ページアクセス時に自動で読み込む
+  window.addEventListener('DOMContentLoaded', loadXml);
   </script>
 </body>
 </html>
